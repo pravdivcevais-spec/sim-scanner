@@ -454,11 +454,20 @@
       }
       el('cam-wrap').classList.remove('off');
       html5QrCode = new Html5Qrcode('reader', false);
-      // Без qrbox — библиотека сканирует весь кадр целиком, а не маленькую
-      // рамку по центру. Это надёжнее: не нужно точно попадать кодом в рамку,
-      // и длинный прямоугольный штрихкод (шире, чем была прежняя рамка)
-      // тоже считывается нормально.
-      var config = { fps: 12 };
+      // QR (мелкий, 2D-узор) распознаётся надёжнее в обрезанной области —
+      // так сохраняется больше исходного разрешения именно на самом коде.
+      // Штрихкод (крупный, 1D) наоборот проще ловится по всему кадру целиком —
+      // не нужно точно попадать длинной полоской в маленькую рамку.
+      var config = STATE.step === 'qr'
+        ? {
+            fps: 12,
+            qrbox: function (viewfinderWidth, viewfinderHeight) {
+              var edge = Math.min(viewfinderWidth, viewfinderHeight);
+              var size = Math.floor(edge * 0.75);
+              return { width: size, height: size };
+            }
+          }
+        : { fps: 12 };
       setStatus('запуск камеры…');
       html5QrCode.start(
         { facingMode: 'environment' },
