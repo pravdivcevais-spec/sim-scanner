@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Привязка SIM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --surface: #ffffff;
+    --surface-2: #ece6d9;
+    --edge: #ddd4c2;
+    --ink: #201c16;
+    --muted: #7a7061;
+    --accent: #b5560f;
+    --accent-strong: #8f4209;
+    --accent-soft: #fbe7d2;
+    --ok: #2f6b3a;
+    --ok-bg: #e7f2e2;
+    --ok-edge: #b8d9ac;
+    --err: #ab2c22;
+    --err-bg: #fbe8e4;
+    --err-edge: #eabaaf;
+    --warn: #8a5a06;
+    --warn-bg: #fbf0d6;
+    --warn-edge: #e6cf8c;
+    --focus: #2b6ea6;
+    --shadow: 0 1px 2px rgba(32,28,22,0.06), 0 6px 20px -8px rgba(32,28,22,0.18);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16130f;
+      --surface: #1f1b15;
+      --surface-2: #29231b;
+      --edge: #3a3226;
+      --ink: #f1ebde;
+      --muted: #ab9f8a;
+      --accent: #e2842a;
+      --accent-strong: #f39a44;
+      --accent-soft: #3a2916;
+      --ok: #7fc48c;
+      --ok-bg: #1c2b1c;
+      --ok-edge: #375f3b;
+      --err: #e78579;
+      --err-bg: #2e1c19;
+      --err-edge: #6b382f;
+      --warn: #e3b656;
+      --warn-bg: #2e2510;
+      --warn-edge: #6b551f;
+      --focus: #7fb6e0;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 28px -10px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16130f;
+    --surface: #1f1b15;
+    --surface-2: #29231b;
+    --edge: #3a3226;
+    --ink: #f1ebde;
+    --muted: #ab9f8a;
+    --accent: #e2842a;
+    --accent-strong: #f39a44;
+    --accent-soft: #3a2916;
+    --ok: #7fc48c;
+    --ok-bg: #1c2b1c;
+    --ok-edge: #375f3b;
+    --err: #e78579;
+    --err-bg: #2e1c19;
+    --err-edge: #6b382f;
+    --warn: #e3b656;
+    --warn-bg: #2e2510;
+    --warn-edge: #6b551f;
+    --focus: #7fb6e0;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 28px -10px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .page {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+
+  header.top {
+    padding: 4px 2px 18px;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  h1 {
+    font-size: 22px;
+    line-height: 1.15;
+    margin: 0;
+    font-weight: 700;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* step tracker */
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 16px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--edge);
+    background: var(--surface);
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .step .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-2);
+    color: var(--muted);
+    flex: none;
+  }
+  .step .label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .step.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .step.active .num { background: var(--accent); color: #fff9f0; }
+  .step.active .label { color: var(--ink); }
+  .step.done .num { background: var(--ok); color: #f4fbf1; }
+  .steps .rail {
+    height: 1px;
+    background: var(--edge);
+  }
+
+  .banner {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    margin-bottom: 14px;
+    border: 1px solid transparent;
+  }
+  .banner.err { background: var(--err-bg); border-color: var(--err-edge); color: var(--err); }
+  .banner.ok { background: var(--ok-bg); border-color: var(--ok-edge); color: var(--ok); }
+  .banner.warn { background: var(--warn-bg); border-color: var(--warn-edge); color: var(--warn); }
+  .banner .dot { flex: none; width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; background: currentColor; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+
+  /* camera viewport with reticle */
+  .cam-wrap {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0e0c09;
+    aspect-ratio: 4 / 3;
+  }
+  #reader, #reader video, #reader canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+  .reticle {
+    position: absolute;
+    inset: 14% 18%;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .reticle i {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid var(--accent-strong);
+    opacity: 0.9;
+  }
+  .reticle i:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; border-top-left-radius: 6px; }
+  .reticle i:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; border-top-right-radius: 6px; }
+  .reticle i:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; border-bottom-left-radius: 6px; }
+  .reticle i:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; border-bottom-right-radius: 6px; }
+  .cam-off {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: #cbbfa9;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px;
+  }
+  .cam-wrap.off .cam-off { display: flex; }
+  .cam-wrap.off .reticle { display: none; }
+
+  .status-line {
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 10px;
+    font-family: "IBM Plex Mono", monospace;
+    min-height: 16px;
+  }
+
+  .manual {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .manual input {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--edge);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 14px;
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .manual input:focus, button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+  .manual input::placeholder { color: var(--muted); font-family: "IBM Plex Sans", sans-serif; }
+
+  button {
+    padding: 11px 16px;
+    border-radius: 9px;
+    border: none;
+    background: var(--accent);
+    color: #fffaf3;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: var(--accent-strong); }
+  button.secondary {
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--edge);
+    width: 100%;
+  }
+  button.secondary:hover { background: var(--edge); }
+
+  /* nameplate — found object card */
+  .plate {
+    border-radius: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--edge);
+    padding: 14px 16px;
+  }
+  .plate .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--edge);
+  }
+  .plate .row:last-child { border-bottom: none; }
+  .plate .k {
+    font-size: 12px;
+    color: var(--muted);
+    flex: none;
+  }
+  .plate .v {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    word-break: break-all;
+  }
+
+  .foot-note {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 22px;
+    line-height: 1.6;
+  }
+  .foot-note code {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card, .banner { animation: rise .25s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="top">
+    <p class="eyebrow">Парк · IoT-устройства</p>
+    <h1>Привязка SIM к устройству</h1>
+    <p class="sub">Сканируйте QR на корпусе устройства, затем штрихкод на SIM-карте — номер запишется в таблицу автоматически.</p>
+  </header>
+
+  <div class="steps">
+    <div class="step active" id="step-1">
+      <span class="num">01</span>
+      <span class="label">QR устройства</span>
+    </div>
+    <div class="rail"></div>
+    <div class="step" id="step-2">
+      <span class="num">02</span>
+      <span class="label">Штрихкод SIM</span>
+    </div>
+  </div>
+
+  <div id="banner-area"></div>
+
+  <div class="card">
+    <h2 id="scan-title">Наведите камеру на QR-код</h2>
+    <div class="cam-wrap" id="cam-wrap">
+      <div id="reader"></div>
+      <div class="reticle"><i></i><i></i><i></i><i></i></div>
+      <div class="cam-off" id="cam-off-msg">Камера недоступна.<br>Введите код вручную ниже.</div>
+    </div>
+    <div class="status-line" id="scan-status">запуск камеры…</div>
+    <div class="manual">
+      <input id="manual-input" type="text" inputmode="text" autocomplete="off" placeholder="ID устройства вручную" />
+      <button id="manual-btn">OK</button>
+    </div>
+  </div>
+
+  <div class="card" id="object-card" style="display:none;">
+    <h2>Найден объект</h2>
+    <div class="plate" id="object-info"></div>
+  </div>
+
+  <button class="secondary" id="reset-btn" style="display:none;">Сканировать следующее устройство</button>
+
+  <p class="foot-note">Данные пишутся напрямую в Google Таблицу «База велосипедов», лист <code>Все IoT</code>.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script>
+  // ====== НАСТРОЙКА ======
+  // Вставьте сюда URL вашего развёрнутого Apps Script веб-приложения (.../exec)
+  // и тот же секретный токен, что указан в Code.gs (QR_SIM_SCANNER_CONFIG.API_TOKEN).
+  var API_URL = 'https://script.google.com/macros/s/AKfycbw6diVX_Fu-fKBruo4wvScWGzuPWsyk0P5sB6tcnDUuCXMZq4qnkNkQHNQnZLdocQ/exec';
+  var API_TOKEN = 'sim-scanner-2026';
+  // ========================
+
+  var STATE = { step: 'qr', rowNumber: null, processing: false };
+  var html5QrCode = null;
+
+  function el(id) { return document.getElementById(id); }
+
+  function showBanner(type, text) {
+    el('banner-area').innerHTML =
+      '<div class="banner ' + type + '"><span class="dot"></span><span>' + text + '</span></div>';
+  }
+  function clearBanner() { el('banner-area').innerHTML = ''; }
+  function setStatus(text) { el('scan-status').textContent = text || ''; }
+
+  function renderObject(row) {
+    var html = '';
+    Object.keys(row).forEach(function (k) {
+      html += '<div class="row"><span class="k">' + escapeHtml(k) + '</span><span class="v">' + escapeHtml(row[k]) + '</span></div>';
+    });
+    el('object-info').innerHTML = html;
+    el('object-card').style.display = 'block';
+  }
+
+  function escapeHtml(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function setStep(step) {
+    STATE.step = step;
+    el('step-1').className = 'step' + (step === 'qr' ? ' active' : ' done');
+    el('step-2').className = 'step' + (step === 'barcode' ? ' active' : '');
+    el('scan-title').textContent = step === 'qr'
+      ? 'Наведите камеру на QR-код'
+      : 'Наведите камеру на штрихкод SIM';
+    el('manual-input').placeholder = step === 'qr'
+      ? 'ID устройства вручную'
+      : 'Штрихкод SIM вручную';
+    el('manual-input').value = '';
+  }
+
+  // ---- камера ----
+  function startScanning() {
+    stopScanning().then(function () {
+      if (typeof Html5Qrcode === 'undefined') {
+        el('cam-wrap').classList.add('off');
+        setStatus('');
+        return;
+      }
+      el('cam-wrap').classList.remove('off');
+      html5QrCode = new Html5Qrcode('reader', false);
+      var config = { fps: 10, qrbox: { width: 230, height: 170 } };
+      setStatus('запуск камеры…');
+      html5QrCode.start(
+        { facingMode: 'environment' },
+        config,
+        onScanSuccess,
+        function () {}
+      ).then(function () {
+        setStatus('камера активна — наведите на код');
+      }).catch(function (err) {
+        el('cam-wrap').classList.add('off');
+        setStatus('');
+        showBanner('warn', 'Камера недоступна (' + err + '). Используйте поле ввода ниже.');
+      });
+    });
+  }
+
+  function stopScanning() {
+    if (html5QrCode) {
+      return html5QrCode.stop().then(function () {
+        html5QrCode.clear();
+        html5QrCode = null;
+      }).catch(function () { html5QrCode = null; });
+    }
+    return Promise.resolve();
+  }
+
+  function onScanSuccess(decodedText) {
+    if (STATE.processing) return;
+    handleCode(decodedText);
+  }
+
+  // ---- вызовы бэкенда (Apps Script) ----
+  function apiFind(code) {
+    var url = API_URL + '?action=find&code=' + encodeURIComponent(code) + '&token=' + encodeURIComponent(API_TOKEN);
+    return fetch(url).then(function (r) { return r.json(); });
+  }
+
+  function apiSave(rowNumber, barcode) {
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'save', token: API_TOKEN, rowNumber: rowNumber, barcode: barcode })
+    }).then(function (r) { return r.json(); });
+  }
+
+  // ---- бизнес-логика ----
+  function handleCode(code) {
+    code = String(code || '').trim();
+    if (!code) return;
+    if (!API_URL || API_URL.indexOf('ВСТАВЬТЕ') === 0) {
+      showBanner('err', 'Не задан адрес сервера (API_URL) в настройках страницы.');
+      return;
+    }
+    STATE.processing = true;
+    clearBanner();
+    setStatus('обработка…');
+
+    var req = STATE.step === 'qr' ? apiFind(code) : apiSave(STATE.rowNumber, code);
+    req.then(function (res) {
+      STATE.processing = false;
+      if (res.error) { onServerError(res.error); return; }
+      if (STATE.step === 'qr') onQrResult(res); else onBarcodeResult(res);
+    }).catch(function (err) {
+      STATE.processing = false;
+      onServerError(String(err));
+    });
+  }
+
+  function onQrResult(res) {
+    if (!res.found) {
+      showBanner('err', res.error || 'Объект не найден.');
+      setStatus('камера активна — наведите на код');
+      return;
+    }
+    if (res.matches > 1) {
+      showBanner('warn', 'Найдено ' + res.matches + ' строк с таким ID, взята первая. Проверьте таблицу на дубликаты.');
+    } else {
+      clearBanner();
+    }
+    STATE.rowNumber = res.rowNumber;
+    renderObject(res.row);
+    setStep('barcode');
+    startScanning();
+  }
+
+  function onBarcodeResult(res) {
+    if (!res.success) {
+      showBanner('err', res.error || 'Не удалось сохранить штрихкод.');
+      setStatus('камера активна — наведите на код');
+      return;
+    }
+    showBanner('ok', 'Штрихкод сохранён в таблице.');
+    renderObject(res.row);
+    setStatus('');
+    stopScanning();
+    el('reset-btn').style.display = 'block';
+  }
+
+  function onServerError(err) {
+    showBanner('err', 'Ошибка сервера: ' + (err && err.message ? err.message : err));
+    setStatus('камера активна — наведите на код');
+  }
+
+  // ---- ручной ввод и сброс ----
+  el('manual-btn').addEventListener('click', function () {
+    var v = el('manual-input').value;
+    if (v) handleCode(v);
+  });
+  el('manual-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') el('manual-btn').click();
+  });
+  el('reset-btn').addEventListener('click', function () {
+    STATE.rowNumber = null;
+    el('object-card').style.display = 'none';
+    el('reset-btn').style.display = 'none';
+    clearBanner();
+    setStep('qr');
+    startScanning();
+  });
+
+  setStep('qr');
+  startScanning();
+</script>
+
+</body>
+</html>
