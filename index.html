@@ -454,7 +454,11 @@
       }
       el('cam-wrap').classList.remove('off');
       html5QrCode = new Html5Qrcode('reader', false);
-      var config = { fps: 10, qrbox: { width: 230, height: 170 } };
+      // Без qrbox — библиотека сканирует весь кадр целиком, а не маленькую
+      // рамку по центру. Это надёжнее: не нужно точно попадать кодом в рамку,
+      // и длинный прямоугольный штрихкод (шире, чем была прежняя рамка)
+      // тоже считывается нормально.
+      var config = { fps: 12 };
       setStatus('запуск камеры…');
       html5QrCode.start(
         { facingMode: 'environment' },
