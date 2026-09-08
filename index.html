@@ -229,6 +229,13 @@
     inset: 14% 18%;
     pointer-events: none;
     z-index: 5;
+    transition: inset .2s ease;
+  }
+  /* На шаге штрихкода рамка узкая и широкая — под полоску штрихкода
+     с номером под ней, чтобы в кадр для распознавания не попадал
+     остальной текст на карточке SIM. */
+  .reticle.wide {
+    inset: 38% 6%;
   }
   .reticle i {
     position: absolute;
@@ -457,6 +464,7 @@
     el('ocr-btn').textContent = step === 'qr'
       ? 'Распознать ID с фото'
       : 'Распознать номер SIM с фото';
+    document.querySelector('.reticle').classList.toggle('wide', step === 'barcode');
   }
 
   // ---- камера ----
@@ -688,6 +696,31 @@
     return ocrWorkerPromise;
   }
 
+  // Переводит видимую на экране рамку-прицел (.reticle) в координаты
+  // реального кадра видео — с учётом того, что видео растянуто/обрезано
+  // через object-fit:cover и на экране показана не вся его площадь.
+  function getReticleCropForVideo(video) {
+    var videoRect = video.getBoundingClientRect();
+    var reticleRect = document.querySelector('.reticle').getBoundingClientRect();
+    var dispW = videoRect.width, dispH = videoRect.height;
+    var scale = Math.max(dispW / video.videoWidth, dispH / video.videoHeight);
+    var renderedW = video.videoWidth * scale;
+    var renderedH = video.videoHeight * scale;
+    var offsetX = (renderedW - dispW) / 2;
+    var offsetY = (renderedH - dispH) / 2;
+    var targetLeft = reticleRect.left - videoRect.left;
+    var targetTop = reticleRect.top - videoRect.top;
+    var sx = (targetLeft + offsetX) / scale;
+    var sy = (targetTop + offsetY) / scale;
+    var sw = reticleRect.width / scale;
+    var sh = reticleRect.height / scale;
+    sx = Math.max(0, Math.min(sx, video.videoWidth - 1));
+    sy = Math.max(0, Math.min(sy, video.videoHeight - 1));
+    sw = Math.max(1, Math.min(sw, video.videoWidth - sx));
+    sh = Math.max(1, Math.min(sh, video.videoHeight - sy));
+    return { sx: sx, sy: sy, sw: sw, sh: sh };
+  }
+
   el('ocr-btn').addEventListener('click', function () {
     if (typeof Tesseract === 'undefined') {
       showBanner('err', 'Модуль распознавания текста не загрузился. Проверьте интернет-соединение.');
@@ -704,10 +737,21 @@
     btn.textContent = 'Распознаю…';
     clearBanner();
 
+    // Берём в обработку только то, что внутри видимой рамки-прицела —
+    // а не весь кадр целиком, иначе в распознавание попадает весь
+    // остальной текст с карточки SIM (телефон, дата, баланс и т.п.).
+    var crop = getReticleCropForVideo(video);
     var canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Увеличиваем масштаб — мелкий текст распознаётся надёжнее на
+    // увеличенном изображении.
+    var upscale = 2;
+    canvas.width = crop.sw * upscale;
+    canvas.height = crop.sh * upscale;
+    canvas.getContext('2d').drawImage(
+      video,
+      crop.sx, crop.sy, crop.sw, crop.sh,
+      0, 0, canvas.width, canvas.height
+    );
 
     getOcrWorker().then(function (worker) {
       return worker.recognize(canvas);
