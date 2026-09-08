@@ -390,6 +390,7 @@
       <input id="manual-input" type="text" inputmode="text" autocomplete="off" placeholder="ID устройства вручную" />
       <button id="manual-btn">OK</button>
     </div>
+    <button class="secondary" id="ocr-btn" type="button" style="width:100%;margin-top:8px;">Распознать номер с фото</button>
   </div>
 
   <div class="card" id="object-card" style="display:none;">
@@ -404,6 +405,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
   // ====== НАСТРОЙКА ======
   // Вставьте сюда URL вашего развёрнутого Apps Script веб-приложения (.../exec)
@@ -452,6 +454,9 @@
       ? 'ID устройства вручную'
       : 'Штрихкод SIM вручную';
     el('manual-input').value = '';
+    el('ocr-btn').textContent = step === 'qr'
+      ? 'Распознать ID с фото'
+      : 'Распознать номер SIM с фото';
   }
 
   // ---- камера ----
@@ -665,6 +670,62 @@
     clearBanner();
     setStep('qr');
     startScanning();
+  });
+
+  // ---- запасной вариант: сфотографировать и распознать печатные цифры ----
+  // Полезно, когда сам штрихкод бледный/плохо пропечатан, но номер под ним
+  // читается — распознаём именно этот текст, а не пытаемся декодировать
+  // штрихкод по полоскам.
+  var ocrWorkerPromise = null;
+  function getOcrWorker() {
+    if (!ocrWorkerPromise) {
+      ocrWorkerPromise = Tesseract.createWorker('eng').then(function (worker) {
+        return worker.setParameters({ tessedit_char_whitelist: '0123456789' }).then(function () {
+          return worker;
+        });
+      });
+    }
+    return ocrWorkerPromise;
+  }
+
+  el('ocr-btn').addEventListener('click', function () {
+    if (typeof Tesseract === 'undefined') {
+      showBanner('err', 'Модуль распознавания текста не загрузился. Проверьте интернет-соединение.');
+      return;
+    }
+    var video = document.querySelector('#reader video');
+    if (!video || !video.videoWidth) {
+      showBanner('warn', 'Камера ещё не готова — подождите секунду и попробуйте снова.');
+      return;
+    }
+    var btn = el('ocr-btn');
+    btn.disabled = true;
+    var oldLabel = btn.textContent;
+    btn.textContent = 'Распознаю…';
+    clearBanner();
+
+    var canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    getOcrWorker().then(function (worker) {
+      return worker.recognize(canvas);
+    }).then(function (result) {
+      var digits = String((result.data && result.data.text) || '').replace(/[^0-9]/g, '');
+      btn.disabled = false;
+      btn.textContent = oldLabel;
+      if (!digits) {
+        showBanner('warn', 'Не удалось разобрать цифры на фото. Держите камеру ровно над номером, без бликов, и попробуйте ещё раз (или введите вручную).');
+        return;
+      }
+      el('manual-input').value = digits;
+      showBanner('ok', 'Распознано: ' + digits + ' — проверьте и нажмите «OK».');
+    }).catch(function (err) {
+      btn.disabled = false;
+      btn.textContent = oldLabel;
+      showBanner('err', 'Ошибка распознавания: ' + err);
+    });
   });
 
   setStep('qr');
