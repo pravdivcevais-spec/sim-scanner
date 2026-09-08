@@ -403,6 +403,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
   // ====== НАСТРОЙКА ======
   // Вставьте сюда URL вашего развёрнутого Apps Script веб-приложения (.../exec)
@@ -412,7 +413,10 @@
   // ========================
 
   var STATE = { step: 'qr', rowNumber: null, processing: false };
-  var html5QrCode = null;
+  var html5QrCode = null;   // движок для штрихкода (шаг 2)
+  var qrStream = null;      // движок для QR (шаг 1) — свой видеопоток + jsQR
+  var qrRafId = null;
+  var qrScanningActive = false;
 
   function el(id) { return document.getElementById(id); }
 
@@ -451,69 +455,120 @@
   }
 
   // ---- камера ----
+  // Для QR (шаг 1) используем свой видеопоток + библиотеку jsQR — на iPhone
+  // она на практике распознаёт мелкие/плотные QR заметно надёжнее, чем движок
+  // из html5-qrcode. Для штрихкода SIM (шаг 2) оставляем html5-qrcode — он
+  // уже подтверждённо работает для крупных линейных штрихкодов.
   function startScanning() {
     stopScanning().then(function () {
-      if (typeof Html5Qrcode === 'undefined') {
-        el('cam-wrap').classList.add('off');
-        setStatus('');
-        return;
-      }
       el('cam-wrap').classList.remove('off');
-      html5QrCode = new Html5Qrcode('reader', false);
-      // QR (мелкий, 2D-узор) распознаётся надёжнее в обрезанной области —
-      // так сохраняется больше исходного разрешения именно на самом коде.
-      // Штрихкод (крупный, 1D) наоборот проще ловится по всему кадру целиком —
-      // не нужно точно попадать длинной полоской в маленькую рамку.
-      var config = STATE.step === 'qr'
-        ? {
-            fps: 8,
-            qrbox: function (viewfinderWidth, viewfinderHeight) {
-              var edge = Math.min(viewfinderWidth, viewfinderHeight);
-              var size = Math.floor(edge * 0.75);
-              return { width: size, height: size };
-            }
-          }
-        : { fps: 12 };
-      // По умолчанию браузер часто отдаёт видео в низком разрешении и с
-      // ленивой фокусировкой — обычная камера телефона использует куда более
-      // качественный поток. Запрашиваем явно высокое разрешение и постоянную
-      // (в т.ч. макро) фокусировку — там, где браузер это поддерживает,
-      // неподдерживаемые пункты он просто проигнорирует, без ошибок.
-      var cameraConstraints = {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        advanced: [{ focusMode: 'continuous' }]
-      };
-      setStatus('запуск камеры…');
-      html5QrCode.start(
-        cameraConstraints,
-        config,
-        onScanSuccess,
-        function () {}
-      ).then(function () {
-        setStatus('камера активна — наведите на код');
-      }).catch(function () {
-        // На случай, если конкретное устройство/браузер не может выполнить
-        // расширенные требования (разрешение/фокус) — пробуем ещё раз с
-        // самыми базовыми настройками, чтобы камера хотя бы включилась.
-        html5QrCode.start(
-          { facingMode: 'environment' },
-          config,
-          onScanSuccess,
-          function () {}
-        ).then(function () {
-          setStatus('камера активна — наведите на код');
-        }).catch(function (err2) {
-          el('cam-wrap').classList.add('off');
-          setStatus('');
-          showBanner('warn', 'Камера недоступна (' + err2 + '). Используйте поле ввода ниже.');
-        });
-      });
+      if (STATE.step === 'qr') {
+        startQrEngine();
+      } else {
+        startBarcodeEngine();
+      }
     });
   }
 
   function stopScanning() {
+    return Promise.all([stopQrEngine(), stopBarcodeEngine()]);
+  }
+
+  function onDecoded(text) {
+    if (STATE.processing) return;
+    handleCode(text);
+  }
+
+  // --- движок QR: getUserMedia + jsQR ---
+  function startQrEngine() {
+    if (typeof jsQR === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      el('cam-wrap').classList.add('off');
+      setStatus('');
+      showBanner('warn', 'Камера недоступна в этом браузере. Используйте поле ввода ниже.');
+      return;
+    }
+    setStatus('запуск камеры…');
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then(function (stream) {
+        qrStream = stream;
+        var video = document.createElement('video');
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.muted = true;
+        el('reader').innerHTML = '';
+        el('reader').appendChild(video);
+        video.srcObject = stream;
+        return video.play().then(function () { return video; });
+      })
+      .then(function (video) {
+        setStatus('камера активна — наведите на код');
+        qrScanningActive = true;
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d', { willReadFrequently: true });
+        var lastTick = 0;
+
+        function tick(now) {
+          if (!qrScanningActive) return;
+          if (!lastTick || now - lastTick > 110) {
+            lastTick = now;
+            if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth) {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              try {
+                var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                var result = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+                if (result && result.data) onDecoded(result.data);
+              } catch (e) { /* кадр ещё не готов — пропускаем */ }
+            }
+          }
+          qrRafId = requestAnimationFrame(tick);
+        }
+        qrRafId = requestAnimationFrame(tick);
+      })
+      .catch(function (err) {
+        el('cam-wrap').classList.add('off');
+        setStatus('');
+        showBanner('warn', 'Камера недоступна (' + err + '). Используйте поле ввода ниже.');
+      });
+  }
+
+  function stopQrEngine() {
+    qrScanningActive = false;
+    if (qrRafId) { cancelAnimationFrame(qrRafId); qrRafId = null; }
+    if (qrStream) {
+      qrStream.getTracks().forEach(function (t) { t.stop(); });
+      qrStream = null;
+    }
+    el('reader').innerHTML = '';
+    return Promise.resolve();
+  }
+
+  // --- движок штрихкода: html5-qrcode (весь кадр целиком) ---
+  function startBarcodeEngine() {
+    if (typeof Html5Qrcode === 'undefined') {
+      el('cam-wrap').classList.add('off');
+      setStatus('');
+      return;
+    }
+    html5QrCode = new Html5Qrcode('reader', false);
+    var config = { fps: 12 };
+    setStatus('запуск камеры…');
+    html5QrCode.start(
+      { facingMode: 'environment' },
+      config,
+      onDecoded,
+      function () {}
+    ).then(function () {
+      setStatus('камера активна — наведите на код');
+    }).catch(function (err) {
+      el('cam-wrap').classList.add('off');
+      setStatus('');
+      showBanner('warn', 'Камера недоступна (' + err + '). Используйте поле ввода ниже.');
+    });
+  }
+
+  function stopBarcodeEngine() {
     if (html5QrCode) {
       return html5QrCode.stop().then(function () {
         html5QrCode.clear();
@@ -521,11 +576,6 @@
       }).catch(function () { html5QrCode = null; });
     }
     return Promise.resolve();
-  }
-
-  function onScanSuccess(decodedText) {
-    if (STATE.processing) return;
-    handleCode(decodedText);
   }
 
   // ---- вызовы бэкенда (Apps Script) ----
