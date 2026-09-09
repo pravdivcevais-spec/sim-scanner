@@ -387,6 +387,84 @@
     .card, .banner { animation: rise .25s ease both; }
     @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   }
+
+  /* очередь "на зарядке" */
+  .queue-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .queue-head h2 { margin: 0; }
+  .queue-chevron {
+    color: var(--muted);
+    font-size: 13px;
+    transition: transform .2s ease;
+    flex: none;
+  }
+  #queue-card.collapsed .queue-chevron { transform: rotate(-90deg); }
+  #queue-card.collapsed #queue-body { display: none; }
+  #queue-body { margin-top: 12px; }
+  .queue-empty {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .queue-item {
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: var(--surface-2);
+  }
+  .queue-item:last-child { margin-bottom: 0; }
+  .queue-item.status-online { border-color: var(--ok-edge); background: var(--ok-bg); }
+  .queue-item.status-offline { border-color: var(--warn-edge); background: var(--warn-bg); }
+  .queue-item.status-never { border-color: var(--edge); }
+  .queue-item.status-error { border-color: var(--err-edge); background: var(--err-bg); }
+  .queue-item .qi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .queue-item .qi-id {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .queue-item .qi-remove {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 4px;
+    cursor: pointer;
+    font-weight: 400;
+  }
+  .queue-item .qi-remove:hover { color: var(--err); }
+  .queue-item .qi-status {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 4px 0 8px;
+    line-height: 1.4;
+  }
+  .queue-item.status-online .qi-status { color: var(--ok); }
+  .queue-item.status-offline .qi-status { color: var(--warn); }
+  .queue-item.status-error .qi-status { color: var(--err); }
+  .queue-item .qi-check {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .queue-item.status-online .qi-check {
+    background: var(--surface-2);
+    color: var(--ok);
+    border: 1px solid var(--ok-edge);
+  }
 </style>
 </head>
 <body>
@@ -435,6 +513,17 @@
 
   <button class="secondary" id="reset-btn" style="display:none;">Сканировать следующее устройство</button>
 
+  <div class="card" id="queue-card">
+    <div class="queue-head" id="queue-toggle-btn">
+      <h2 style="margin:0;">На зарядке <span id="queue-count" class="mono">(0)</span></h2>
+      <span class="queue-chevron" id="queue-chevron">▾</span>
+    </div>
+    <div id="queue-body">
+      <p class="queue-empty" id="queue-empty">Пусто. Устройство попадает сюда автоматически после привязки SIM — поставьте его на зарядку и проверьте здесь через 15–20 минут, вышло ли оно в онлайн.</p>
+      <div id="queue-list"></div>
+    </div>
+  </div>
+
   <p class="foot-note">Данные пишутся напрямую в Google Таблицу «База велосипедов», лист <code>Все IoT</code>.</p>
 </div>
 
@@ -446,9 +535,16 @@
   // и тот же секретный токен, что указан в Code.gs (QR_SIM_SCANNER_CONFIG.API_TOKEN).
   var API_URL = 'https://script.google.com/macros/s/AKfycbw6diVX_Fu-fKBruo4wvScWGzuPWsyk0P5sB6tcnDUuCXMZq4qnkNkQHNQnZLdocQ/exec';
   var API_TOKEN = 'sim-scanner-2026';
+
+  // Адрес Cloudflare Worker'а, который проверяет статус устройства в xDevice
+  // (см. worker.js и README) — это ОТДЕЛЬНЫЙ сервер от Apps Script выше,
+  // нужен только для раздела "На зарядке". Вставьте сюда адрес вида
+  // https://ваш-worker.ваш-поддомен.workers.dev, который Cloudflare покажет
+  // после развёртывания Worker'а.
+  var XDEVICE_PROXY_URL = 'https://sim-scanner-xdevice.pravdivcevais.workers.dev';
   // ========================
 
-  var STATE = { step: 'qr', rowNumber: null, processing: false };
+  var STATE = { step: 'qr', rowNumber: null, processing: false, deviceId: null };
   var html5QrCode = null;   // движок для штрихкода (шаг 2)
   var qrStream = null;      // движок для QR (шаг 1) — свой видеопоток + jsQR
   var qrRafId = null;
@@ -664,6 +760,18 @@
     }).then(function (r) { return r.json(); });
   }
 
+  // Проверка "вышло ли устройство в онлайн" — идёт через отдельный
+  // Cloudflare Worker (XDEVICE_PROXY_URL), а не через Apps Script и не
+  // напрямую в xDevice (тот не разрешает межсайтовые запросы с домена
+  // страницы-сканера).
+  function apiCheckOnline(code) {
+    if (!XDEVICE_PROXY_URL || XDEVICE_PROXY_URL.indexOf('ВСТАВЬТЕ') === 0) {
+      return Promise.resolve({ error: 'Не задан адрес Cloudflare Worker (XDEVICE_PROXY_URL) в настройках страницы.' });
+    }
+    var url = XDEVICE_PROXY_URL + '?code=' + encodeURIComponent(code) + '&token=' + encodeURIComponent(API_TOKEN);
+    return fetch(url).then(function (r) { return r.json(); });
+  }
+
   // ---- бизнес-логика ----
   function handleCode(code) {
     code = String(code || '').trim();
@@ -675,6 +783,7 @@
     STATE.processing = true;
     clearBanner();
     setStatus('обработка…');
+    if (STATE.step === 'qr') STATE.deviceId = code;
 
     var req = STATE.step === 'qr' ? apiFind(code) : apiSave(STATE.rowNumber, code);
     req.then(function (res) {
@@ -721,12 +830,157 @@
     setStatus('готово ✓');
     stopScanning();
     el('reset-btn').style.display = 'block';
+    if (STATE.deviceId) addToQueue(STATE.deviceId);
   }
 
   function onServerError(err) {
     showBanner('err', 'Ошибка сервера: ' + (err && err.message ? err.message : err));
     setStatus('камера активна — наведите на код');
   }
+
+  // ---- очередь "На зарядке" ----
+  // Список устройств, которым только что привязали SIM и поставили на
+  // зарядку — хранится в localStorage этого телефона/браузера, чтобы не
+  // терять список между визитами на страницу. Каждый элемент проверяется
+  // вручную, когда сотрудник решит, что прошло достаточно времени.
+  var QUEUE_KEY = 'simScannerChargingQueue_v1';
+
+  function loadQueue() {
+    try {
+      var raw = localStorage.getItem(QUEUE_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+
+  function saveQueue(arr) {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+
+  function addToQueue(id) {
+    var queue = loadQueue();
+    if (queue.some(function (item) { return item.id === id; })) return; // уже в списке
+    queue.unshift({
+      id: id,
+      addedAt: Date.now(),
+      lastChecked: null,
+      lastStatus: null,   // null | 'online' | 'offline' | 'never' | 'notfound' | 'error'
+      lastSeen: null,
+      lastError: null
+    });
+    saveQueue(queue);
+    renderQueue();
+  }
+
+  function removeFromQueue(id) {
+    saveQueue(loadQueue().filter(function (item) { return item.id !== id; }));
+    renderQueue();
+  }
+
+  function formatShortTime(ms) {
+    if (!ms) return '';
+    try {
+      return new Date(ms).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return ''; }
+  }
+
+  function queueStatusText(item) {
+    if (!item.lastChecked) return 'Добавлено ' + formatShortTime(item.addedAt) + ' — ещё не проверялось.';
+    if (item.lastStatus === 'online') {
+      return '✓ Онлайн (проверено ' + formatShortTime(item.lastChecked) + ')';
+    }
+    if (item.lastStatus === 'offline') {
+      var seen = item.lastSeen ? ', последний раз на связи ' + formatShortTime(item.lastSeen) : '';
+      return 'Пока офлайн' + seen + '. Проверено ' + formatShortTime(item.lastChecked) + '.';
+    }
+    if (item.lastStatus === 'never') {
+      return 'Ещё ни разу не выходило на связь. Проверено ' + formatShortTime(item.lastChecked) + '.';
+    }
+    if (item.lastStatus === 'notfound') {
+      return 'Не найдено в xDevice — проверьте ID устройства.';
+    }
+    return 'Ошибка проверки: ' + (item.lastError || 'неизвестная ошибка') + '.';
+  }
+
+  function renderQueue() {
+    var queue = loadQueue();
+    el('queue-count').textContent = '(' + queue.length + ')';
+    el('queue-empty').style.display = queue.length ? 'none' : 'block';
+    var list = el('queue-list');
+    if (!queue.length) { list.innerHTML = ''; return; }
+
+    list.innerHTML = queue.map(function (item) {
+      var statusClass = item.lastStatus ? 'status-' + item.lastStatus : '';
+      var btnLabel = item.lastChecked ? 'Проверить ещё раз' : 'Проверить онлайн';
+      if (item.lastStatus === 'online') btnLabel = 'Проверить заново';
+      return (
+        '<div class="queue-item ' + statusClass + '" data-id="' + escapeHtml(item.id) + '">' +
+          '<div class="qi-top">' +
+            '<span class="qi-id">' + escapeHtml(item.id) + '</span>' +
+            '<button type="button" class="qi-remove" data-action="remove" title="Убрать из списка">✕</button>' +
+          '</div>' +
+          '<div class="qi-status">' + escapeHtml(queueStatusText(item)) + '</div>' +
+          '<button type="button" class="secondary qi-check" data-action="check">' + escapeHtml(btnLabel) + '</button>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function checkQueueItem(id, btn) {
+    var oldLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Проверяю…';
+    apiCheckOnline(id).then(function (res) {
+      var queue = loadQueue();
+      var item = queue.find(function (it) { return it.id === id; });
+      if (!item) return; // убрали из списка, пока шёл запрос
+      item.lastChecked = Date.now();
+      if (res.error) {
+        item.lastStatus = 'error';
+        item.lastError = res.error;
+      } else if (!res.found) {
+        item.lastStatus = 'notfound';
+      } else if (!res.everConnected) {
+        item.lastStatus = 'never';
+      } else if (res.online) {
+        item.lastStatus = 'online';
+        item.lastSeen = res.lastSeen || Date.now();
+        if (navigator.vibrate) { try { navigator.vibrate(80); } catch (e) {} }
+      } else {
+        item.lastStatus = 'offline';
+        item.lastSeen = res.lastSeen || null;
+      }
+      saveQueue(queue);
+      renderQueue();
+    }).catch(function (err) {
+      var queue = loadQueue();
+      var item = queue.find(function (it) { return it.id === id; });
+      if (item) {
+        item.lastChecked = Date.now();
+        item.lastStatus = 'error';
+        item.lastError = String(err);
+        saveQueue(queue);
+      }
+      renderQueue();
+    });
+  }
+
+  el('queue-toggle-btn').addEventListener('click', function () {
+    el('queue-card').classList.toggle('collapsed');
+  });
+
+  el('queue-list').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    var itemEl = e.target.closest('.queue-item');
+    var id = itemEl && itemEl.getAttribute('data-id');
+    if (!id) return;
+    if (btn.dataset.action === 'remove') {
+      removeFromQueue(id);
+    } else if (btn.dataset.action === 'check') {
+      checkQueueItem(id, btn);
+    }
+  });
 
   // ---- ручной ввод и сброс ----
   el('manual-btn').addEventListener('click', function () {
@@ -753,6 +1007,7 @@
     startScanning();
   });
 
+  renderQueue();
   setStep('qr');
   startScanning();
 </script>
