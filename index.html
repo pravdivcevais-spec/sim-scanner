@@ -9,71 +9,71 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f1ea;
+    --bg: #f1f6f7;
     --surface: #ffffff;
-    --surface-2: #ece6d9;
-    --edge: #ddd4c2;
-    --ink: #201c16;
-    --muted: #7a7061;
-    --accent: #b5560f;
-    --accent-strong: #8f4209;
-    --accent-soft: #fbe7d2;
-    --ok: #2f6b3a;
-    --ok-bg: #e7f2e2;
-    --ok-edge: #b8d9ac;
-    --err: #ab2c22;
-    --err-bg: #fbe8e4;
-    --err-edge: #eabaaf;
-    --warn: #8a5a06;
-    --warn-bg: #fbf0d6;
-    --warn-edge: #e6cf8c;
-    --focus: #2b6ea6;
-    --shadow: 0 1px 2px rgba(32,28,22,0.06), 0 6px 20px -8px rgba(32,28,22,0.18);
+    --surface-2: #e6eef0;
+    --edge: #d3dfe3;
+    --ink: #142226;
+    --muted: #64777d;
+    --accent: #0f7a72;
+    --accent-strong: #0b5f59;
+    --accent-soft: #dbf0ec;
+    --ok: #2f7d4f;
+    --ok-bg: #e6f4ea;
+    --ok-edge: #b7ddc4;
+    --err: #c23b30;
+    --err-bg: #fbe9e7;
+    --err-edge: #eab6ae;
+    --warn: #b8790a;
+    --warn-bg: #fbf1d9;
+    --warn-edge: #e8cd8e;
+    --focus: #1f6fb2;
+    --shadow: 0 1px 2px rgba(20,34,38,0.06), 0 6px 20px -8px rgba(20,34,38,0.18);
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #16130f;
-      --surface: #1f1b15;
-      --surface-2: #29231b;
-      --edge: #3a3226;
-      --ink: #f1ebde;
-      --muted: #ab9f8a;
-      --accent: #e2842a;
-      --accent-strong: #f39a44;
-      --accent-soft: #3a2916;
-      --ok: #7fc48c;
-      --ok-bg: #1c2b1c;
-      --ok-edge: #375f3b;
-      --err: #e78579;
-      --err-bg: #2e1c19;
-      --err-edge: #6b382f;
-      --warn: #e3b656;
-      --warn-bg: #2e2510;
-      --warn-edge: #6b551f;
+      --bg: #0d1416;
+      --surface: #121b1e;
+      --surface-2: #1a262a;
+      --edge: #283539;
+      --ink: #e7f1f0;
+      --muted: #8fa3a8;
+      --accent: #2bb3a6;
+      --accent-strong: #4fcabe;
+      --accent-soft: #123330;
+      --ok: #7ed99a;
+      --ok-bg: #17301f;
+      --ok-edge: #2f5f3e;
+      --err: #ef9088;
+      --err-bg: #341c19;
+      --err-edge: #6e372f;
+      --warn: #e8c165;
+      --warn-bg: #332a10;
+      --warn-edge: #6d551f;
       --focus: #7fb6e0;
       --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 28px -10px rgba(0,0,0,0.6);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #16130f;
-    --surface: #1f1b15;
-    --surface-2: #29231b;
-    --edge: #3a3226;
-    --ink: #f1ebde;
-    --muted: #ab9f8a;
-    --accent: #e2842a;
-    --accent-strong: #f39a44;
-    --accent-soft: #3a2916;
-    --ok: #7fc48c;
-    --ok-bg: #1c2b1c;
-    --ok-edge: #375f3b;
-    --err: #e78579;
-    --err-bg: #2e1c19;
-    --err-edge: #6b382f;
-    --warn: #e3b656;
-    --warn-bg: #2e2510;
-    --warn-edge: #6b551f;
+    --bg: #0d1416;
+    --surface: #121b1e;
+    --surface-2: #1a262a;
+    --edge: #283539;
+    --ink: #e7f1f0;
+    --muted: #8fa3a8;
+    --accent: #2bb3a6;
+    --accent-strong: #4fcabe;
+    --accent-soft: #123330;
+    --ok: #7ed99a;
+    --ok-bg: #17301f;
+    --ok-edge: #2f5f3e;
+    --err: #ef9088;
+    --err-bg: #341c19;
+    --err-edge: #6e372f;
+    --warn: #e8c165;
+    --warn-bg: #332a10;
+    --warn-edge: #6d551f;
     --focus: #7fb6e0;
     --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 28px -10px rgba(0,0,0,0.6);
   }
@@ -170,7 +170,7 @@
     border-color: var(--accent);
     background: var(--accent-soft);
   }
-  .step.active .num { background: var(--accent); color: #fff9f0; }
+  .step.active .num { background: var(--accent); color: #f2fbfa; }
   .step.active .label { color: var(--ink); }
   .step.done .num { background: var(--ok); color: #f4fbf1; }
   .steps .rail {
@@ -193,6 +193,28 @@
   .banner.ok { background: var(--ok-bg); border-color: var(--ok-edge); color: var(--ok); }
   .banner.warn { background: var(--warn-bg); border-color: var(--warn-edge); color: var(--warn); }
   .banner .dot { flex: none; width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; background: currentColor; }
+  .banner.big {
+    padding: 14px 14px;
+    font-size: 15.5px;
+    font-weight: 600;
+    align-items: center;
+    border-width: 1.5px;
+    animation: pop .3s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .banner.big .check {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--surface);
+  }
+  @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
 
   .card {
     background: var(--surface);
@@ -201,6 +223,11 @@
     padding: 16px;
     margin-bottom: 14px;
     box-shadow: var(--shadow);
+  }
+  .card.flash-ok {
+    border-color: var(--ok-edge);
+    box-shadow: 0 0 0 3px var(--ok-bg), var(--shadow);
+    transition: box-shadow .25s ease, border-color .25s ease;
   }
   .card h2 {
     font-size: 13px;
@@ -216,7 +243,7 @@
     position: relative;
     border-radius: 12px;
     overflow: hidden;
-    background: #0e0c09;
+    background: #0a1112;
     aspect-ratio: 4 / 3;
   }
   #reader, #reader video, #reader canvas {
@@ -254,7 +281,7 @@
     display: none;
     align-items: center;
     justify-content: center;
-    color: #cbbfa9;
+    color: #b7c8cb;
     font-size: 13px;
     text-align: center;
     padding: 20px;
@@ -298,7 +325,7 @@
     border-radius: 9px;
     border: none;
     background: var(--accent);
-    color: #fffaf3;
+    color: #f2fbfa;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -385,6 +412,8 @@
 
   <div id="banner-area"></div>
 
+  <button class="secondary" id="back-btn" type="button" style="display:none;width:100%;margin-bottom:12px;">‹ Назад к сканированию QR</button>
+
   <div class="card">
     <h2 id="scan-title">Наведите камеру на QR-код</h2>
     <div class="cam-wrap" id="cam-wrap">
@@ -397,7 +426,6 @@
       <input id="manual-input" type="text" inputmode="text" autocomplete="off" placeholder="ID устройства вручную" />
       <button id="manual-btn">OK</button>
     </div>
-    <button class="secondary" id="ocr-btn" type="button" style="width:100%;margin-top:8px;">Распознать номер с фото</button>
   </div>
 
   <div class="card" id="object-card" style="display:none;">
@@ -412,7 +440,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
   // ====== НАСТРОЙКА ======
   // Вставьте сюда URL вашего развёрнутого Apps Script веб-приложения (.../exec)
@@ -429,9 +456,11 @@
 
   function el(id) { return document.getElementById(id); }
 
-  function showBanner(type, text) {
+  function showBanner(type, text, big) {
     el('banner-area').innerHTML =
-      '<div class="banner ' + type + '"><span class="dot"></span><span>' + text + '</span></div>';
+      '<div class="banner ' + type + (big ? ' big' : '') + '">' +
+      (big ? '<span class="check">✓</span>' : '<span class="dot"></span>') +
+      '<span>' + text + '</span></div>';
   }
   function clearBanner() { el('banner-area').innerHTML = ''; }
   function setStatus(text) { el('scan-status').textContent = text || ''; }
@@ -450,6 +479,18 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // Столбец SIM (SIM_COLUMN_HEADER в Code.gs) может называться чуть иначе
+  // по регистру/пробелам — ищем без учёта этого, чтобы предупреждение
+  // сработало даже при небольшом расхождении.
+  var SIM_COLUMN_NAME = 'SIM';
+  function findRowValue(row, headerName) {
+    if (!row) return '';
+    if (Object.prototype.hasOwnProperty.call(row, headerName)) return row[headerName];
+    var target = headerName.trim().toLowerCase();
+    var key = Object.keys(row).find(function (k) { return k.trim().toLowerCase() === target; });
+    return key ? row[key] : '';
+  }
+
   function setStep(step) {
     STATE.step = step;
     el('step-1').className = 'step' + (step === 'qr' ? ' active' : ' done');
@@ -461,10 +502,8 @@
       ? 'ID устройства вручную'
       : 'Штрихкод SIM вручную';
     el('manual-input').value = '';
-    el('ocr-btn').textContent = step === 'qr'
-      ? 'Распознать ID с фото'
-      : 'Распознать номер SIM с фото';
     document.querySelector('.reticle').classList.toggle('wide', step === 'barcode');
+    el('back-btn').style.display = step === 'barcode' ? 'block' : 'none';
   }
 
   // ---- камера ----
@@ -519,18 +558,27 @@
         var canvas = document.createElement('canvas');
         var ctx = canvas.getContext('2d', { willReadFrequently: true });
         var lastTick = 0;
+        // Обрабатываем уменьшенную копию кадра — jsQR ищет код заметно
+        // быстрее на небольшом изображении, а для чтения QR с телефона
+        // хватает с запасом даже 480px по длинной стороне.
+        var MAX_DIM = 480;
 
         function tick(now) {
           if (!qrScanningActive) return;
-          if (!lastTick || now - lastTick > 110) {
+          if (!lastTick || now - lastTick > 66) {
             lastTick = now;
             if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth) {
-              canvas.width = video.videoWidth;
-              canvas.height = video.videoHeight;
+              var vw = video.videoWidth, vh = video.videoHeight;
+              var scale = Math.min(1, MAX_DIM / Math.max(vw, vh));
+              canvas.width = Math.round(vw * scale);
+              canvas.height = Math.round(vh * scale);
               ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
               try {
                 var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                var result = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+                var result = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+                if (!result) {
+                  result = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+                }
                 if (result && result.data) onDecoded(result.data);
               } catch (e) { /* кадр ещё не готов — пропускаем */ }
             }
@@ -565,7 +613,18 @@
       return;
     }
     html5QrCode = new Html5Qrcode('reader', false);
-    var config = { fps: 12 };
+    // Узкая широкая рамка вместо всего кадра — движок обрабатывает
+    // заметно меньше пикселей за проход и распознаёт штрихкод быстрее.
+    // Пропорции те же, что у видимой рамки-прицела (.reticle.wide).
+    var config = {
+      fps: 15,
+      qrbox: function (viewfinderWidth, viewfinderHeight) {
+        return {
+          width: Math.round(viewfinderWidth * 0.88),
+          height: Math.round(viewfinderHeight * 0.24)
+        };
+      }
+    };
     setStatus('запуск камеры…');
     html5QrCode.start(
       { facingMode: 'environment' },
@@ -634,8 +693,11 @@
       setStatus('камера активна — наведите на код');
       return;
     }
+    var existingSim = String(findRowValue(res.row, SIM_COLUMN_NAME) || '').trim();
     if (res.matches > 1) {
       showBanner('warn', 'Найдено ' + res.matches + ' строк с таким ID, взята первая. Проверьте таблицу на дубликаты.');
+    } else if (existingSim) {
+      showBanner('warn', 'У этого устройства уже привязан SIM: ' + escapeHtml(existingSim) + '. Новый скан заменит его, только если это разрешено в настройках сервера.');
     } else {
       clearBanner();
     }
@@ -651,9 +713,12 @@
       setStatus('камера активна — наведите на код');
       return;
     }
-    showBanner('ok', 'Штрихкод сохранён в таблице.');
+    showBanner('ok', 'SIM успешно привязан к устройству и сохранён в таблице.', true);
+    if (navigator.vibrate) { try { navigator.vibrate([60, 40, 60]); } catch (e) {} }
     renderObject(res.row);
-    setStatus('');
+    el('object-card').classList.add('flash-ok');
+    setTimeout(function () { el('object-card').classList.remove('flash-ok'); }, 1200);
+    setStatus('готово ✓');
     stopScanning();
     el('reset-btn').style.display = 'block';
   }
@@ -679,97 +744,13 @@
     setStep('qr');
     startScanning();
   });
-
-  // ---- запасной вариант: сфотографировать и распознать печатные цифры ----
-  // Полезно, когда сам штрихкод бледный/плохо пропечатан, но номер под ним
-  // читается — распознаём именно этот текст, а не пытаемся декодировать
-  // штрихкод по полоскам.
-  var ocrWorkerPromise = null;
-  function getOcrWorker() {
-    if (!ocrWorkerPromise) {
-      ocrWorkerPromise = Tesseract.createWorker('eng').then(function (worker) {
-        return worker.setParameters({ tessedit_char_whitelist: '0123456789' }).then(function () {
-          return worker;
-        });
-      });
-    }
-    return ocrWorkerPromise;
-  }
-
-  // Переводит видимую на экране рамку-прицел (.reticle) в координаты
-  // реального кадра видео — с учётом того, что видео растянуто/обрезано
-  // через object-fit:cover и на экране показана не вся его площадь.
-  function getReticleCropForVideo(video) {
-    var videoRect = video.getBoundingClientRect();
-    var reticleRect = document.querySelector('.reticle').getBoundingClientRect();
-    var dispW = videoRect.width, dispH = videoRect.height;
-    var scale = Math.max(dispW / video.videoWidth, dispH / video.videoHeight);
-    var renderedW = video.videoWidth * scale;
-    var renderedH = video.videoHeight * scale;
-    var offsetX = (renderedW - dispW) / 2;
-    var offsetY = (renderedH - dispH) / 2;
-    var targetLeft = reticleRect.left - videoRect.left;
-    var targetTop = reticleRect.top - videoRect.top;
-    var sx = (targetLeft + offsetX) / scale;
-    var sy = (targetTop + offsetY) / scale;
-    var sw = reticleRect.width / scale;
-    var sh = reticleRect.height / scale;
-    sx = Math.max(0, Math.min(sx, video.videoWidth - 1));
-    sy = Math.max(0, Math.min(sy, video.videoHeight - 1));
-    sw = Math.max(1, Math.min(sw, video.videoWidth - sx));
-    sh = Math.max(1, Math.min(sh, video.videoHeight - sy));
-    return { sx: sx, sy: sy, sw: sw, sh: sh };
-  }
-
-  el('ocr-btn').addEventListener('click', function () {
-    if (typeof Tesseract === 'undefined') {
-      showBanner('err', 'Модуль распознавания текста не загрузился. Проверьте интернет-соединение.');
-      return;
-    }
-    var video = document.querySelector('#reader video');
-    if (!video || !video.videoWidth) {
-      showBanner('warn', 'Камера ещё не готова — подождите секунду и попробуйте снова.');
-      return;
-    }
-    var btn = el('ocr-btn');
-    btn.disabled = true;
-    var oldLabel = btn.textContent;
-    btn.textContent = 'Распознаю…';
+  el('back-btn').addEventListener('click', function () {
+    STATE.rowNumber = null;
+    el('object-card').style.display = 'none';
+    el('reset-btn').style.display = 'none';
     clearBanner();
-
-    // Берём в обработку только то, что внутри видимой рамки-прицела —
-    // а не весь кадр целиком, иначе в распознавание попадает весь
-    // остальной текст с карточки SIM (телефон, дата, баланс и т.п.).
-    var crop = getReticleCropForVideo(video);
-    var canvas = document.createElement('canvas');
-    // Увеличиваем масштаб — мелкий текст распознаётся надёжнее на
-    // увеличенном изображении.
-    var upscale = 2;
-    canvas.width = crop.sw * upscale;
-    canvas.height = crop.sh * upscale;
-    canvas.getContext('2d').drawImage(
-      video,
-      crop.sx, crop.sy, crop.sw, crop.sh,
-      0, 0, canvas.width, canvas.height
-    );
-
-    getOcrWorker().then(function (worker) {
-      return worker.recognize(canvas);
-    }).then(function (result) {
-      var digits = String((result.data && result.data.text) || '').replace(/[^0-9]/g, '');
-      btn.disabled = false;
-      btn.textContent = oldLabel;
-      if (!digits) {
-        showBanner('warn', 'Не удалось разобрать цифры на фото. Держите камеру ровно над номером, без бликов, и попробуйте ещё раз (или введите вручную).');
-        return;
-      }
-      el('manual-input').value = digits;
-      showBanner('ok', 'Распознано: ' + digits + ' — проверьте и нажмите «OK».');
-    }).catch(function (err) {
-      btn.disabled = false;
-      btn.textContent = oldLabel;
-      showBanner('err', 'Ошибка распознавания: ' + err);
-    });
+    setStep('qr');
+    startScanning();
   });
 
   setStep('qr');
